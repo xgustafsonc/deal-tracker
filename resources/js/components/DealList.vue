@@ -1,13 +1,9 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { onMounted, computed } from 'vue';
+import { useDeals } from '../composables/useDeals';
 
-const deals = ref([]);
-const loading = ref(true);
-const error = ref(null);
+const { deals, loading, error, fetchDeals, startEditing, deleteDeal } = useDeals();
 
-// Let op: volledige class-strings, GEEN `bg-${color}-100`.
-// Tailwind scant je broncode statisch — dynamisch opgebouwde
-// classnames worden niet gevonden en krijgen dus geen styling.
 const stageClasses = {
     gray: 'bg-gray-100 text-gray-700',
     blue: 'bg-blue-100 text-blue-700',
@@ -19,29 +15,20 @@ const stageClasses = {
 
 const formatValue = (value) =>
     new Intl.NumberFormat('nl-NL', {
-        style: 'currency',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
+        style: 'currency', currency: 'EUR', maximumFractionDigits: 0,
     }).format(value);
 
 const totalValue = computed(() =>
     deals.value.reduce((sum, deal) => sum + Number(deal.value), 0)
 );
 
-onMounted(async () => {
-    try {
-        const response = await fetch('/api/deals', {
-            headers: { Accept: 'application/json' },
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const json = await response.json();
-        deals.value = json.data;
-    } catch (e) {
-        error.value = e.message;
-    } finally {
-        loading.value = false;
+const confirmDelete = (deal) => {
+    if (confirm(`Deal "${deal.title}" verwijderen?`)) {
+        deleteDeal(deal.id);
     }
-});
+};
+
+onMounted(fetchDeals);
 </script>
 
 <template>
@@ -71,6 +58,8 @@ onMounted(async () => {
                         </th>
                         <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                             Waarde</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                            Acties</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -88,6 +77,12 @@ onMounted(async () => {
                         </td>
                         <td class="px-4 py-3 text-right text-sm font-medium text-gray-900">
                             {{ formatValue(deal.value) }}
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm whitespace-nowrap">
+                            <button @click="startEditing(deal)"
+                                class="font-medium text-blue-600 hover:text-blue-800">Bewerken</button>
+                            <button @click="confirmDelete(deal)"
+                                class="ml-3 font-medium text-red-600 hover:text-red-800">Verwijderen</button>
                         </td>
                     </tr>
                 </tbody>

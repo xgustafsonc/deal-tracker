@@ -1,4 +1,5 @@
 <script setup>
+import DealForm from './components/DealForm.vue';
 import DealList from './components/DealList.vue';
 </script>
 
@@ -10,7 +11,8 @@ import DealList from './components/DealList.vue';
                 <p class="text-sm text-gray-500">Overzicht van alle deals</p>
             </div>
         </header>
-        <main class="mx-auto max-w-5xl px-6 py-8">
+        <main class="mx-auto max-w-5xl px-6 py-8 space-y-8">
+            <DealForm />
             <DealList />
         </main>
     </div>
