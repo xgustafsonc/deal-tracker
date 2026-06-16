@@ -49,24 +49,34 @@ it('maakt een deal aan', function () {
     ]);
 });
 
-it('vereist de verplichte velden', function () {
-    $this->postJson('/api/deals', [])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors(['company_id', 'title', 'value', 'stage']);
-});
-
-it('weigert een ongeldige fase', function () {
+it('valideert de velden bij het aanmaken van een deal', function (array $overrides, string $invalidField) {
     $company = Company::factory()->create();
 
-    $this->postJson('/api/deals', [
+    // Een volledig geldige payload als basis...
+    $payload = [
         'company_id' => $company->id,
-        'title' => 'Test',
-        'value' => 1000,
-        'stage' => 'banaan',
-    ])
+        'title' => 'Geldige deal',
+        'value' => 1_000_000,
+        'stage' => DealStage::Lead->value,
+    ];
+
+    // ...waar we per geval precies één ding aan stukmaken
+    $payload = array_merge($payload, $overrides);
+
+    $this->postJson('/api/deals', $payload)
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['stage']);
-});
+        ->assertJsonValidationErrors([$invalidField]);
+})->with([
+    'titel ontbreekt'        => [['title' => ''], 'title'],
+    'titel te lang'          => [['title' => str_repeat('a', 256)], 'title'],
+    'waarde ontbreekt'       => [['value' => null], 'value'],
+    'waarde is geen getal'   => [['value' => 'veel geld'], 'value'],
+    'waarde is negatief'     => [['value' => -500], 'value'],
+    'fase ontbreekt'         => [['stage' => ''], 'stage'],
+    'fase is ongeldig'       => [['stage' => 'banaan'], 'stage'],
+    'bedrijf bestaat niet'   => [['company_id' => 99999], 'company_id'],
+    'contact bestaat niet'   => [['contact_id' => 99999], 'contact_id'],
+]);
 
 it('werkt een deal bij', function () {
     $deal = Deal::factory()->create(['title' => 'Oude titel']);
