@@ -6,45 +6,43 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDealRequest;
 use App\Http\Resources\DealResource;
 use App\Models\Deal;
+use App\Services\DealService;
 
 class DealController extends Controller
 {
-    // GET /api/deals
+    public function __construct(
+        private readonly DealService $deals
+    ) {}
+
     public function index()
     {
-        $deals = Deal::with(['company', 'contact'])->latest()->get();
-
-        return DealResource::collection($deals);
+        return DealResource::collection($this->deals->list());
     }
 
-    // POST /api/deals
     public function store(StoreDealRequest $request)
     {
-        $deal = Deal::create($request->validated());
+        $deal = $this->deals->create($request->validated());
 
-        return (new DealResource($deal->load(['company', 'contact'])))
+        return (new DealResource($deal))
             ->response()
             ->setStatusCode(201);
     }
 
-    // GET /api/deals/{deal}
     public function show(Deal $deal)
     {
         return new DealResource($deal->load(['company', 'contact']));
     }
 
-    // PUT/PATCH /api/deals/{deal}
     public function update(StoreDealRequest $request, Deal $deal)
     {
-        $deal->update($request->validated());
+        $deal = $this->deals->update($deal, $request->validated());
 
-        return new DealResource($deal->load(['company', 'contact']));
+        return new DealResource($deal);
     }
 
-    // DELETE /api/deals/{deal}
     public function destroy(Deal $deal)
     {
-        $deal->delete();
+        $this->deals->delete($deal);
 
         return response()->noContent();
     }
