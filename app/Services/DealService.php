@@ -7,10 +7,21 @@ use Illuminate\Database\Eloquent\Collection;
 
 class DealService
 {
-    public function list(): Collection
-    {
-        return Deal::with(['company', 'contact'])->latest()->get();
-    }
+    public function list(array $filters = []): Collection
+{
+    return Deal::query()
+        ->with(['company', 'contact'])
+        ->when(
+            $filters['search'] ?? null,
+            fn ($query, $search) => $query->where('title', 'like', "%{$search}%")
+        )
+        ->when(
+            $filters['stage'] ?? null,
+            fn ($query, $stage) => $query->where('stage', $stage)
+        )
+        ->latest()
+        ->get();
+}
 
     public function create(array $data): Deal
     {

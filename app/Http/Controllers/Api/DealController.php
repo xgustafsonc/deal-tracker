@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDealRequest;
 use App\Http\Resources\DealResource;
@@ -14,10 +15,12 @@ class DealController extends Controller
         private readonly DealService $deals
     ) {}
 
-    public function index()
-    {
-        return DealResource::collection($this->deals->list());
-    }
+    public function index(Request $request)
+{
+    $filters = $request->only(['search', 'stage']);
+
+    return DealResource::collection($this->deals->list($filters));
+}
 
     public function store(StoreDealRequest $request)
     {

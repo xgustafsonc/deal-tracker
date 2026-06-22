@@ -1,8 +1,21 @@
 <script setup>
-import { onMounted, computed } from 'vue';
+import { onMounted, computed, ref, watch } from 'vue';
 import { useDeals } from '../composables/useDeals';
 
 const { deals, loading, error, fetchDeals, startEditing, deleteDeal } = useDeals();
+
+const search = ref('');
+const stageFilter = ref('');
+
+const stages = [
+    { value: '', label: 'Alle fases' },
+    { value: 'lead', label: 'Lead' },
+    { value: 'qualified', label: 'Gekwalificeerd' },
+    { value: 'proposal', label: 'Voorstel' },
+    { value: 'negotiation', label: 'Onderhandeling' },
+    { value: 'won', label: 'Gewonnen' },
+    { value: 'lost', label: 'Verloren' },
+];
 
 const stageClasses = {
     gray: 'bg-gray-100 text-gray-700',
@@ -28,17 +41,41 @@ const confirmDelete = (deal) => {
     }
 };
 
-onMounted(fetchDeals);
+const initialLoad = ref(true);
+
+const applyFilters = () => {
+    fetchDeals({ search: search.value, stage: stageFilter.value });
+};
+
+let timer = null;
+watch(search, () => {
+    clearTimeout(timer);
+    timer = setTimeout(applyFilters, 300);
+});
+
+watch(stageFilter, applyFilters);
+
+onMounted(async () => {
+    await fetchDeals();
+    initialLoad.value = false;
+});
 </script>
 
 <template>
-    <div v-if="loading" class="text-gray-500">Deals laden…</div>
+    <div v-if="initialLoad" class="text-gray-500">Deals laden…</div>
 
     <div v-else-if="error" class="rounded-lg bg-red-50 p-4 text-red-700">
         Er ging iets mis: {{ error }}
     </div>
 
     <div v-else>
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row">
+            <input v-model="search" type="text" placeholder="Zoek op titel…"
+                class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            <select v-model="stageFilter" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <option v-for="s in stages" :key="s.value" :value="s.value">{{ s.label }}</option>
+            </select>
+        </div>
         <div class="mb-4 flex items-center justify-between">
             <span class="text-sm text-gray-500">{{ deals.length }} deals</span>
             <span class="text-sm font-medium text-gray-700">
@@ -46,7 +83,7 @@ onMounted(fetchDeals);
             </span>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white" :class="{ 'opacity-60': loading }">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>

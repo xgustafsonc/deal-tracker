@@ -104,3 +104,32 @@ it('verwijdert een deal', function () {
 
     $this->assertDatabaseMissing('deals', ['id' => $deal->id]);
 });
+
+it('filtert deals op fase', function () {
+    Deal::factory()->create(['stage' => 'won']);
+    Deal::factory()->create(['stage' => 'lead']);
+
+    $this->getJson('/api/deals?stage=won')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.stage.value', 'won');
+});
+
+it('zoekt deals op titel', function () {
+    Deal::factory()->create(['title' => 'Overname Acme']);
+    Deal::factory()->create(['title' => 'Participatie Bravo']);
+
+    $this->getJson('/api/deals?search=overname')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.title', 'Overname Acme');
+});
+
+it('combineert zoeken en filteren', function () {
+    Deal::factory()->create(['title' => 'Overname Acme', 'stage' => 'won']);
+    Deal::factory()->create(['title' => 'Overname Bravo', 'stage' => 'lead']);
+
+    $this->getJson('/api/deals?search=overname&stage=won')
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+});

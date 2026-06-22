@@ -6,11 +6,13 @@ const error = ref(null);
 const editingDeal = ref(null); // null = create-modus, deal-object = edit-modus
 
 export function useDeals() {
-    const fetchDeals = async () => {
+    const fetchDeals = async (filters = {}) => {
         loading.value = true;
         error.value = null;
         try {
-            const { data } = await window.axios.get("/api/deals");
+            const { data } = await window.axios.get("/api/deals", {
+                params: filters,
+            });
             deals.value = data.data;
         } catch (e) {
             error.value = e.message;
